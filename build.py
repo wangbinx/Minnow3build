@@ -349,4 +349,3 @@ elif select_script in ['n','N','No','NO','no']:
 		print e
 else:
 	print "Input ERROR"
-print "Last line of Script"
