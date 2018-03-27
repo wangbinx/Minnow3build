@@ -1,351 +1,691 @@
-﻿#!/usr/bin/python
+#!/usr/bin/python
 #This script for Minnow3 image auto build
-import os
-import sys
-import subprocess
-import shutil
-import time
-import filecmp
+## Add type to script need add below information
+## 1.Add the type to controller excel, please follow the format, don't change the merge cell format
+## 2.Add key_msg which the information on BIOS file name to misc()
+## 3.Add Build command parameter to command_dict on command()
+## 4.Add to self.dict:{Logfilename[0]:'xxx',VS2015_image_filename[0:-1]:'xxx',GCC_image_filename[0:-1]:'xxx'} on class result
+## 5.Add html table to html_model, to create result report and email
+##
+import os,platform,subprocess,filecmp,re
+import stat,shutil,zipfile, xlrd
+import time,datetime,logging
+import smtplib
+from optparse import OptionParser
+from string import Template
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 #Define path
 root_path=os.getcwd()
 edk_path=os.path.join(root_path,'edk2-platforms')
-Image_path=os.path.join(root_path,'Image')
-log_path=os.path.join(Image_path,'log')
-email_path=os.path.join(root_path,'email')
-backup_path=os.path.join(root_path,'backupfile')
-backup_basetools=os.path.join(backup_path,'Win32')
-backup_FPS=os.path.join(backup_path,'ApolloLakeFspBinPkg')
-backup_UNDI=os.path.join(backup_path,'I210PcieUndiDxe')
-backup_nasm=os.path.join(backup_path,'nasm')
-backup_Iasl=os.path.join(backup_path,'Iasl')
-backup_openssl=os.path.join(backup_path,'openssl-1.0.2g')
-backup_IFWI=os.path.join(backup_path,'IFWI')
-basetools_path=os.path.join(edk_path,'BaseTools','Bin','Win32')
-FSP_path=os.path.join(edk_path,'Silicon','BroxtonSoC','BroxtonFspPkg','ApolloLakeFspBinPkg')
-UNDI_path=os.path.join(edk_path,'Platform','BroxtonPlatformPkg','Common','Binaries','UNDI','I210PcieUndiDxe')
-nasm_path=os.path.join(edk_path,'Platform','BroxtonPlatformPkg','Common','Tools','nasm')
-Iasl_path=os.path.join(edk_path,'Platform','BroxtonPlatformPkg','Common','Tools','Iasl')
-openssl_path=os.path.join(edk_path,'Core','CryptoPkg','Library','OpensslLib','openssl-1.0.2g')
-IFWI_path=os.path.join(edk_path,'Platform','BroxtonPlatformPkg','Common','Binaries','IFWI')
-build_path=os.path.join(edk_path,'Platform','BroxtonPlatformPkg','Common','Tools','Stitch')
+tmp=os.path.join(root_path,'tmp')
+M_Readme=os.path.join(root_path,'Readme','Minnow3.txt')
+B_Readme=os.path.join(root_path,'Readme','Benson.txt')
+MT_Readme=os.path.join(root_path,'Readme','Minnow3 Module.txt')
+LH_Readme=os.path.join(root_path,'Readme','Leaf Hill.txt')
+Minnow3_Readme=os.path.join(tmp,'Readme_Minnow3.txt')
+Benson_Readme=os.path.join(tmp,'Readme_Benson.txt')
+Minnow3Module_Readme=os.path.join(tmp,'Readme_Minnow3 Module.txt')
+LeafHill_Readme=os.path.join(tmp,'Readme_Leaf Hill.txt')
+html_model=os.path.join(root_path,'Readme','result_model.html')
+image_build_path=os.path.join(edk_path,'Platform','BroxtonPlatformPkg','Common','Tools','Stitch')
+Firmwareupdate_path=os.path.join(edk_path,'Build','BroxtonPlatformPkg')
+network_path=os.path.join('\\\shwde9524','Backup_Minnow3Broxton')
 
-#Image build values
-build_bat = 'BuildBIOS.bat'
-vs_version = 'VS15'
-broxton = 'Broxton'
+#mount network share path to ubuntu path
+network_GCC=os.path.join('/media','share')
+
+#Image share location
+mail_share_path = "\\\shwde9524\Backup_Minnow3Broxton\\"
 
 
-#edk2-platforms download path
-ssh_edk= "git@github.com:tianocore/edk2-platforms.git -b devel-MinnowBoard3"
-https_edk= "https://github.com/tianocore/edk2-platforms.git -b devel-MinnowBoard3"
+# Set Image file size to determine the build result
+Image_size = '8M'
 
-#edk2-BaseTools-win32 download path, not used because already backup
-ssh_basetool= "git@github.com:tianocore/edk2-BaseTools-win32.git"
-https_basetool= "https://github.com/tianocore/edk2-BaseTools-win32.git"
+#Email for result
+sender = 'binx.a.wang@intel.com'
+receiver = ['weix.b.sun@intel.com','binx.a.wang@intel.com','linglix.ji@intel.com','yanyanx.zhang@intel.com','yunhuax.feng@intel.com']
+Cc=['yonghong.zhu@intel.com','david.wei@intel.com','shifeix.a.lu@intel.com','mang.guo@intel.com','keerock.lee@intel.com']
 
-#Check platform
-def check_platform():
-	if sys.platform == "win32":
-		return "windows"
-	elif sys.platform == "linux2":
-		return "linux"
+def sys():
+	if platform.system() == "Windows":
+		return True
+	elif platform.system() == "Linux":
+		return False
 	else:
-		print "Script only support on Windows and Linux"
+		logger.error("Not support")
 		exit()
+# Different between windows and linux
+#'key_msg': Information on BIOS file name
+def misc():
+	if sys():
+		misc={
+		'key_msg_in_log':"Build_IFWI is finished",	
+		'symbol':'\\','tool':'VS2015','Minnow3':{'key_msg':'MINNOW3'},'Benson Glacier':{'key_msg':'BENSONV'},'Minnow3 Module':{'key_msg':'M3MODUL'},'Leaf Hill':{'key_msg':'LEAFHIL'}}
+	else:
+		misc={
+		'key_msg_in_log':"FV Space Information",
+		'symbol':'/','tool':'GCC','Minnow3':{'key_msg':'MNW3'},'Benson Glacier':{'key_msg':'BEN1'},'Minnow3 Module':{'key_msg':'M3MO'},'Leaf Hill':{'key_msg':'LEAF'}}
+	return misc
 
-#Check backup floder exists
-def check_floder(path):
-	platform = check_platform()
-	if platform == "windows":
-		try:
-			if os.path.exists(path):
-				print "%s exist --PASS" %path
-				pass
-			else:
-				print "%s lost --Failed" %path
-				exit()
-		except Exception, e:
-			print e
-			exit()
-	elif platform =="linux":
-		print "Waiting linux support Build Script"
-		exit()
+#Clasee for repository
+#Modify the link if chaged
+#Download, delete, compare update and create version folder
+class repository:
+	ssh_edk= "git@github.com:tianocore/edk2-platforms.git -b devel-MinnowBoard3-UDK2017"
+	https_edk= "https://github.com/tianocore/edk2-platforms.git -b devel-MinnowBoard3-UDK2017"
+	root =os.getcwd() #recoder the path
+	def __init__(self,ver_log_path,https,ssh=None):
+		self.ver_log_path=ver_log_path
+		self.ssh=ssh
+		self.https=https
+		self.repo=self.https.split('/')[-1].split('.')[0]
 		
-
-#Check repository exist, if exist, will delete
-#Download repository from Github, repo is the repository name or path, ssh/https is the ssh/https link for repository
-def download_repository(repo,ssh,https):
-	try:
-		platform = check_platform()
-		if platform == "windows":
-			if os.path.exists(repo):
-				os.system('rmdir /S /Q %s' %repo)
-				if os.path.exists(repo):
-					print "Delete the floder %s failed, please delete the floder in %s before run the script" %(repo,root_path)
-					exit()
-				else:
-					pass
-			else:
-				pass
-		elif platform == "linux":
-			if os.path.exists(repo):
-				shutil.rmtree(repo)
-				if os.path.exists(repo):
-					print "Delete the floder %s failed, please delete the floder in root_path" %(repo,root_path)
-					exit()
-				else:
-					pass
-			else:
-				pass
-		#Download from Github
+	def delete(self):
 		try:
-			DL1 = subprocess.check_call("git clone --depth=1 %s" %ssh,shell=True)
+			for path,dir,file in os.walk(self.repo,topdown=True,onerror=None, followlinks=True):
+				for k in file:
+					filename=os.path.join(path,k)
+					os.chmod(filename,stat.S_IRWXU) #change file mode to delete the repository
+			if os.path.exists(self.repo):
+				logger.info('%s repository already exist, delete the repository'%self.repo)
+				shutil.rmtree(self.repo)
+				logger.info("Delete exist repository %s success" %self.repo)
+		except Exception,e:
+			logger.error(str(e))
+		
+	def download(self):
+		self.delete()
+		try:
+			logger.info('Downloading repository %s'%self.repo)
+			DL1 = subprocess.check_call("git clone --depth=1 %s" %self.https,shell=True)
 			if DL1 == 0:
-				print "Download from %s success --PASS" %ssh
+				logger.info("Download from %s success --PASS" %self.https)
 		except subprocess.CalledProcessError:
-			print "Download from %s failed, try %s" %(ssh,https)
-			try:
-				DL2 = subprocess.check_call("git clone --depth=1 %s" %https,shell=True)
+			if self.ssh != None:
+				logger.warning("Download from %s failed, try %s" %(self.https,self.ssh))
+				DL2 = subprocess.check_call("git clone --depth=1 %s" %self.ssh,shell=True)
 				if DL2 ==0:
-					print "Download from %s success --PASS" %https
-			except Exception, e:
-				print e
-				exit()
-	except Exception, e:
-		print e
-		exit()
-
-# check environment configuration for run
-def check_install():
-	if check_platform() == "windows":
-		edk2_check = os.path.exists(edk_path)
-		basetools_check = os.path.exists(basetools_path)
-		FSP_check = os.path.exists(FSP_path)
-		UNDI_check = os.path.exists(UNDI_path)
-		nasm_check = os.path.exists(nasm_path)
-		Iasl_check = os.path.exists(Iasl_path)
-		openssl_check = os.path.exists(openssl_path)
-		IFWI_check = os.path.exists(IFWI_path)
-		try:
-			if edk2_check and basetools_check and FSP_check and UNDI_check and nasm_check and Iasl_check and openssl_check and IFWI_check == True:
-				print "Check build environment configuration --PASS"
+					logger.info("Download from %s success --PASS" %self.ssh)
 			else:
-				print "Build environment configuration may damage, please select configure environment and run the script"
-		except Exception, e:
-			print e
-			exit()
-	elif check_platform() == "linux":
-		print "Waiting linux support Build Script"
-#Copy file to specified path
-def copy_to_path(orgin_path,specified_path):
-	try:
-		if os.path.exists(specified_path):
-			try:
-				shutil.rmtree(specified_path)
-				print "Delete floder %s" %specified_path
-				shutil.copytree(orgin_path,specified_path)
-				print "Copy file %s to %s successful --PASS" %(orgin_path,specified_path)
-			except Exception, e:
-				print e
+				logger.error("Download repository %s Fail" %self.repo)
 				exit()
+	#compare to detect code update
+	#True for update or never build, False for not update
+	#If set Force_Build_Switch to 1, will build no matter code update or not
+	def compare(self):
+		version=os.path.join(self.ver_log_path,'version.log')
+		bak=os.path.join(self.ver_log_path,'version.log.bak')
+		if not os.path.exists(self.ver_log_path):
+			os.mkdir(self.ver_log_path)
+		os.chdir(self.repo)
+		subprocess.check_call('git log -1 > version.log',shell=True)
+		shutil.copy('version.log',self.ver_log_path)
+		os.chdir(self.ver_log_path)
+		if os.path.exists(bak):
+			comp=filecmp.cmp(version,bak)
+			os.chdir(repository.root)
+			if comp == False:
+				logger.info("Code version has update")
+				shutil.copy(version,bak)
+				return True
+			else:
+				logger.info("Code version not update")
+				return False
 		else:
-			shutil.copytree(orgin_path,specified_path)
-			print "Copy file %s to %s successful --PASS" %(orgin_path,specified_path)
-	except Exception, e:
-		print e
-		exit()
+			logger.info("No old version be detected")
+			os.chdir(repository.root)
+			shutil.copy(version,bak)
+			return True
+	
+	#create version folder and return
+	def verpath(self):
+		global version_info,verlog
+		verlog=os.path.join(self.ver_log_path,'version.log')
+		try:
+			fo=open(verlog)
+		except Exception,e:
+			logger.error("Open %s failed" %verlog+str(e))
+		line=fo.readline()
+		if 'commit' in line:
+			version_info=line[7:47]
+			path = os.path.join(root_path,'Image',line[7:15])
+		else:
+			version_info='No Version'
+			path = os.path.join(root_path,'Image','No Version')
+		if os.path.exists(path):
+			shutil.rmtree(path)
+			time.sleep(3)
+		os.makedirs(path)
+		fo.close()
+		return path
+	
+	def allstep(self):
+		global Force_Build_Switch
+		self.download()
+		if Force_Build_Switch == 0:
+			return self.compare()
+		elif Force_Build_Switch == 1:
+			logger.info("Force Build Switch set to 1, begin build image")
+			self.compare()
+			Force_Build_Switch = 0
+			return True
 
-#compare version change
-def ver_comp(repo_path,log_path):
-	repo_log= os.path.join(repo_path,'version.log')
-	try:
-		if os.path.exists(repo_path):
-			if os.path.exists(log_path):
+#class for svn update
+#change the link, username and password		
+class svn:
+	user = "sys_tianobui"
+	password = "IB5J6eaRQvE/sdE4g774LY97rRnVnA7L7i71rzatNpuPKnKQ="
+	link = "https://ssvn.intel.com:80/ssg/csd/tiano/tianoad/trunk/Platforms/MinnowBoard3/Binaries/devel-MinnowBoard3-UDK2017"
+	
+	def __init__(self, user, passwd, link):
+		self.user=user
+		self.passwd=passwd
+		self.link=link
+		self.command = "--non-interactive --no-auth-cache --trust-server-cert --username %s --password %s"%(self.user,self.passwd)
+		self.svnfolder=self.link.split('/')[-1]
+		
+	def download(self):
+		try:
+			if os.path.exists(self.svnfolder):
+				logger.info("Update necessary files from SVN")
+				svn_result = subprocess.check_call("svn update %s %s" %(self.svnfolder,self.command),shell=True)
+			else:
+				logger.info("Download necessary files form SVN")
+				svn_result = subprocess.check_call("svn checkout %s %s" %(self.link,self.command),shell=True)
+			return svn_result
+		except Exception, e:
+			logger.error(e)
+			time.sleep(10)
+			self.download()
+			return 0
+	
+	#Copy file to config build environment
+	def copy(self):
+		if not self.download() == 0:
+			logger.error('Download or Update necessary file from SVN failed')
+			exit()
+		else:
+			logger.info('Start configure build environment')
+			try:
+				if sys():
+					subprocess.check_call('xcopy /Q /E /Y %s %s' %(self.svnfolder,edk_path), shell=True)
+				else:
+					subprocess.check_call('cp -r %s/* %s' %(self.svnfolder,edk_path), shell=True)
+				logger.info('Configure finish')
+			except Exception, e:
+				logger.error("Configure build environment failed:"+str(e))
+				exit()
+
+#Class for zip source code and unzip
+#Will zip file to Source\
+class zip_source_file:
+	root = os.getcwd()
+	def __init__(self,zipdir,ziptarget):
+		global Source_path
+		self.zipdir=zipdir
+		self.zipfilename="%s.zip"%zipdir
+		self.ziptarget=os.path.join(ziptarget,'Source')
+		self.source= os.path.join(self.ziptarget,self.zipfilename)
+		Source_path=self.ziptarget
+				
+	def zip(self):
+		filelist = []
+		if os.path.isfile(self.zipdir):
+			filelist.append(self.zipdir)
+		else:
+			for path, dirs, files in os.walk(self.zipdir):
+				for name in files:
+					filelist.append(os.path.join(path, name))
+		try:
+			logger.info("Zipping %s to save source code..." %self.zipfilename)
+			zf = zipfile.ZipFile(self.zipfilename, "w", zipfile.zlib.DEFLATED)
+			for file in filelist:
+				name = file[len(self.zipdir):]
+				zf.write(file,name)
+			zf.close()
+			logger.info('zip %s success'%self.zipfilename)
+		except Exception,e:
+			logger.error("Zip failed:"+str(e))
+		if os.path.exists(self.ziptarget):
+			shutil.rmtree(self.ziptarget)
+		os.makedirs(self.ziptarget)
+		shutil.move(self.zipfilename,self.ziptarget)
+			
+	def unzip(self):
+		os.chdir(zip_source_file.root)
+		if os.path.exists(self.zipdir):
+			repository(tmp,repository.https_edk,repository.ssh_edk).delete()
+		if not os.path.exists(self.source):
+			logger.error('%s file not exist'%self.source)
+		try:
+			logger.info('start unzip %s file'%self.source)
+			unzip=zipfile.ZipFile(self.source,'r')
+			for file in unzip.namelist():
+				unzip.extract(file,self.zipdir)
+			unzip.close()
+			logger.info('unzip %s success'%self.zipdir)
+			if not sys():
 				try:
-					os.chdir(repo_path)
-					subprocess.check_call('git log -1 > version.log',shell=True)
-					os.chdir(log_path)
-					if os.path.exists('version.log'):
-						os.remove('version.log')
-					shutil.move(repo_log,log_path)
-				except Exception, e:
-					print e
-					exit()
-			else:
-				os.makedirs(log_path)
-				ver_comp(repo_path,log_path)
-			os.chdir(log_path)
-			if os.path.exists('version.log.bak'):
-				result = filecmp.cmp('version.log.bak','version.log')
-				if result == False:
-					print "Detect version has update, will start build process"
-					if os.path.exists('version.log.bak'):
-						os.remove('version.log.bak')
-						shutil.copy('version.log','version.log.bak')
-					os.chdir(root_path)
-					return "update"
+					subprocess.check_call('chmod -R 777 %s'%self.zipdir,shell=True) #Change unzip file mode for execute
+				except Exception,e:
+					logger.error('Change %s access failed'%self.zipdir+str(e))
+		except Exception,e:
+			logger.error("Unzip failed:"+str(e))
+
+#Class for excel
+#Read the excel and return build command
+#Please follow the excel format when add
+class excel:
+	root = os.getcwd()
+	if sys():
+		xls_file = os.path.join(root,'Readme','controller_win.xlsx')
+	else:
+		xls_file = os.path.join(root,'Readme','controller_ubuntu.xlsx')
+	control_sheet = 'Controller'
+	def readxls(self):
+		all=[]
+		select=[]
+		try:
+			xls = xlrd.open_workbook(excel.xls_file)
+			sh = xls.sheet_by_name(excel.control_sheet)
+		except Exception,e:
+			logger.error('please makesure sheet %s exist'%(excel.control_sheet)+str(e))
+		ncol = sh.ncols
+		nrow = sh.nrows
+		for i in range(0,nrow):
+			for a in range(0, ncol):
+				if sh.merged_cells:
+					for x in sh.merged_cells:
+						if sys():  # Windows format
+							if (i in range(x[0],x[1]) and a in range(x[2],x[3])):
+								if (x[2],x[3])==(0,1):
+									plat=sh.cell_value(x[0],x[2])
+								elif (x[2],x[3])==(1,2):
+									FAB=sh.cell_value(x[0],x[2])
 				else:
-					print "Detect version has not update, still run script to detect change..."
-					return "same"
-			else:
-				print "No old version be detected, it is the first time to build image."
-				return "first"
-	except Exception, e:
-			print e
-
-#Configuration build environment
-def update_version():
-	try:
-		#download_repository('edk2-platforms',ssh_edk,https_edk)
-		copy_to_path(backup_FPS,FSP_path)
-		copy_to_path(backup_IFWI,IFWI_path)
-		copy_to_path(backup_Iasl,Iasl_path)
-		copy_to_path(backup_UNDI,UNDI_path)
-		copy_to_path(backup_basetools,basetools_path)
-		copy_to_path(backup_nasm,nasm_path)
-		copy_to_path(backup_openssl,openssl_path)
-		print "Build environment configure successful --PASS"
-	except Exception, e:
-		print e
-#Image build
-def build_image(build_bat,vs_version,arch,broxton,image_type):
-	print "Begin build image %s %s" %(arch,image_type)
-	try:
-		os.chdir(edk_path)
-		#log=open('%s%s.log'%(arch,image_type),'w+')
-		#__origin__ = sys.stdout
-		#sys.stdout=log
-		#print "Image build test"
-		build=subprocess.check_call('%s /%s /%s %s %s > %s%s.log' %(build_bat,vs_version,arch,broxton,image_type,arch,image_type),shell=True)
-		#sys.stdout = __origin__
-		#log.close()
-		os.chdir(log_path)
-		if os.path.exists('%s%s.log'%(arch,image_type)):
-			os.remove('%s%s.log'%(arch,image_type))
-			if os.path.exists('%s%s.log'%(arch,image_type)):
-				print "Remove old log file failed"
-			else:
-				print "Remove old log file --PASS"
-		os.chdir(edk_path)
-		shutil.move('%s%s.log'%(arch,image_type),log_path)
-	except Exception, e:
-			print e
-
-#Always detect version change
-def detect_version():
-	try:
-		download_repository('edk2-platforms',ssh_edk,https_edk)
-		de_ver = ver_comp(edk_path,log_path)
-		return de_ver
-	except Exception, e:
-		print e
-
-
-#If version update, will build image, else will pause 30min and detect again
-def keep_update():
-	version= detect_version()
-	if version == 'same':
-		print "Script will detect the version after 8H, press Ctrl+C to stop the script"
-		time.sleep(28800)
-		keep_update()
-	elif version == 'update':
-		update_version()
-		build_image(build_bat,vs_version,'IA32',broxton,'Release')
-		build_image(build_bat,vs_version,'IA32',broxton,'Debug')
-		build_image(build_bat,vs_version,'x64',broxton,'Release')
-		build_image(build_bat,vs_version,'x64',broxton,'Debug')
-		#print "Build image begin **************************************** "
-		search(build_path,'MINNOWV3.')
-		build_result()
-		keep_update()
-	elif version== 'first':
-		update_version()
-		os.chdir(log_path)
-		shutil.copy('version.log','version.log.bak')
-		#print "Build image begin **************************************** "
-		build_image(build_bat,vs_version,'IA32',broxton,'Release')
-		build_image(build_bat,vs_version,'IA32',broxton,'Debug')
-		build_image(build_bat,vs_version,'x64',broxton,'Release')
-		build_image(build_bat,vs_version,'x64',broxton,'Debug')
-		search(build_path,'MINNOWV3.')
-		build_result()
-		os.chdir(log_path)
-		shutil.copy('version.log','version.log.bak')
-		keep_update()
-
-#copy image file to Image path
-def search(path,key_w):
-	try:
-		#date=time.strftime('%Y%m%d')
-		#date_image_path=os.path.join(Image_path,date)
-		#os.makedirs(date_image_path)
-		for name in os.listdir(path):
-			filename = os.path.join(path,name)
-			if os.path.isfile(filename) and key_w in filename:
-				print "%s Image file found" %name
-				os.chdir(Image_path)
-				if os.path.exists(name):
-					move=raw_input("Image file %s already exist, do you want to override(y/n/all):" %name)
-					if move =="y":
-						try:
-							os.remove(name)
-							shutil.move(filename,Image_path)
-							print "%s move success --PASS" %name
-						except Exception,e:
-							print e
-					else:
-						print "%s not move for user selection" %name
+					plat=sh.cell_value(i,0)
+					FAB=sh.cell_value(i,1)
+				value = sh.cell_value(i,a)
+				if (value == 'y' or value == 'Y'or value == 'N/A' or value == 'n/a'):
+					arch = sh.cell_value(i,2)
+					type = sh.cell_value(0,a)
+					if (value == 'y' or value == 'Y'):
+						selecttd='%s_%s_%s_%s'%(plat,FAB,arch,type[0])
+						select.append(selecttd)
+					alltd='%s_%s_%s_%s'%(plat,FAB,arch,type[0])
+					all.append(alltd)
+		return (all,select)
+		##[u'Minnow3_FAB A_IA32_R', u'Minnow3_FAB A_IA32_D']
+	
+	#Return command
+	#add the para to the command_dict if want to add some type
+	def command(self):
+		command_dict={
+		'Minnow3':'',				'Benson Glacier':'/BG',
+		'Minnow3 Module':'/MX',		'Leaf Hill':'/LH',
+		'FAB B':'/B',				'FAB A':'/A',		'FAB D':'/D',
+		'X64':'/X64',				'IA32':'/IA32',
+		'R':'Release type=normal',	'D':'Debug type=normal',
+		'F':'Release type=Fastboot','S':'Debug type=Source Level Debug'}
+		xls=self.readxls()
+		buildcommand=[]
+		logger.info('*'*20+'Below command will Run'+'*'*20)
+		for list in xls[1]:
+			value=list.split('_')
+			Actaul_value = []
+			try:
+				for key in value:
+					if key in command_dict.keys():
+						Actaul_value.append(command_dict[key])
+				if sys():
+					##command format for windows
+					##example: BuildBIOS.bat /VS15 /m /A /X64 Broxton Debug type=normal
+					command ='BuildBIOS.bat /VS15 /m %s %s %s Broxton %s'%(tuple(Actaul_value))
 				else:
-					shutil.move(filename,Image_path)
-					print "%s move success --PASS" %name
-	except Exception, e:
-		print e
-#check log file for report build result
-def build_result():
-	try:
-		build_pass =[]
-		message = "Build_IFWI is finished"
-		body = os.path.join(email_path,'__Email_Body_File.txt')
-		for path,dir,logfile in os.walk(log_path,topdown=True,onerror=None, followlinks=False):
-			os.chdir(path)
-			for name in logfile:
-				log = open(name,'r')
-				for result in log.readlines():
-					if message in result:
-						build_pass.append(name[:-4])
-		if os.path.exists(body):
-			os.remove(body)
-		with open(body,'wb')as mail_body:
-			mail_body.write("Build Pass:\n\r")
-			mail_body.write(str(build_pass))
-			mail_body.close()
-		print "Add build result to mail body--pass"
-		os.chdir(email_path)
-		subprocess.check_call('SendReport.bat',shell=True)
-	except Exception, e:
-		print e
+					##command format for linux
+					##example: /bin/bash ./BuildBIOS.sh /A Debug type=normal
+					command ='/bin/bash ./BuildBIOS.sh %s %s %s'%(Actaul_value[0],Actaul_value[1],Actaul_value[3])
+				logger.info(command)
+				buildcommand.append(command)
+			except Exception,e:
+				print e
+				logger.warning("Some table can't be analyzed")
+		logger.info('*'*62)
+		return buildcommand,command_dict
 
-#Script begining
-print "***************Script begin for Minnow3 Image auto Build*************"
-print """
-If you want to install the build environment and run, please input Yes
-If the environment has already configuration, please input No"""
-select_script=raw_input("Input(y/n):")
-if select_script in ['y','yes','Yes','Y','YES']:
-#check backupfile floder and email exist
+#Search file from findpath and copy to targetpath
+#the para rule is the regular expression rule
+def copy(findpath,targetpath,rule,rename=None):
+	findfile =re.compile(rule,re.S)
+	if os.path.exists(findpath):
+		for path,dir,file in os.walk(findpath,topdown=True,onerror=None, followlinks=False):
+			if file != []:
+				for z in file:
+					full_path = os.path.join(path,z)
+					filename = findfile.findall(z)
+					if filename:
+						if os.path.exists(targetpath):
+							if rename != None:
+								targetpath=os.path.join(targetpath,rename)
+							try:
+								shutil.copy(full_path,targetpath)
+								logger.info('copy %s to %s success'%(filename[0],targetpath))
+							except Exception,e:
+								logger.warning('copy %s to %s failed'%(filename[0],targetpath)+str(e))
+						else:
+							logger.warning('copy %s failed,target path %s not exists'%(filename,targetpath))
+	else:
+		logger.error("The path %s not exists"%findpath)
+
+#modify file content
+#Search keyword, replace the var1 to var2
+def modify(filename,keyword,var1,var2,rename=None):
 	try:
-		check_floder(backup_path)
-		check_floder(email_path)
-#Configure Build environment
-		keep_update()
-	except Exception, e:
-		print e
-elif select_script in ['n','N','No','NO','no']:
+		f=open(filename,'r+')
+		lines = f.readlines()
+		f.close()
+		if rename == None:
+			f=open(filename,'w+')
+		else:
+			f=open(rename,'w+')
+		for line in lines:
+			if keyword in line:
+				line=line.replace(var1,var2)
+			f.write(line)
+		f.close()
+		logger.info('%s file modify success'%filename)
+	except Exception,e:
+		logger.error(e)
+
+#Class for Build Image
+class build:
+	Dscpath=os.path.join(edk_path,'Platform','BroxtonPlatformPkg','PlatformDsc','Defines.dsc')
+
+	def __init__(self,command,analyze_dict):
+		##example: BuildBIOS.bat /VS15 /m /A /X64 Broxton Debug type=normal
+		##example: /bin/bash ./BuildBIOS.sh /A Debug type=normal
+		self.dict1={x:y for y, x in analyze_dict.items()} #reverse the command_dict
+		self.command=command.split('type=')[0]
+		self.imagetype=command.split('type=')[1] #normal/Fastboot/Source Level Debug
+		self.list = self.command.split(' ')
+		self.type = self.list[-2] #Debug/Release
+		if sys():
+			self.FAB=self.list[-5][-1] #A/B
+			self.arch = self.list[-4][1:] #X64/IA32
+			self.board=self.dict1[self.list[3]]
+		else:
+			self.FAB =self.list[-3][-1] #A/B
+			self.arch = 'X64'
+			self.board=self.dict1[self.list[2]]
+		self.logformat='%s_%s_%s_%s'%(self.board,self.FAB,self.arch,self.type)
+	
+	def buildprocess(self):
+		logger.info('-'*8+'Begin Build %s %s %s %s %s Image'%(self.board,self.FAB,self.arch,self.type,self.imagetype)+'-'*8)
+		logger.info('Build Command: %s'%self.command)
+		key_msg=misc()[self.board]['key_msg']
+		Image=os.path.join(ver_path,self.board,'FAB %s'%self.FAB,misc()['tool'],'Image')
+		Log= os.path.join(ver_path,self.board,'FAB %s'%self.FAB,misc()['tool'],'Log')
+		if self.imagetype !='normal':
+			Image=os.path.join(Image,self.imagetype)
+			Log= os.path.join(Log,self.imagetype)
+			if not (os.path.exists(Image) and os.path.exists(Log)):
+				os.makedirs(Image)
+				os.makedirs(Log)
+			Dsc_origin= os.path.join(Image,'Defines_ori.dsc')
+			Dsc_special = os.path.join(Image,'Defines_'+self.imagetype+'.dsc')
+			shutil.copy(build.Dscpath,Dsc_origin)
+			if self.imagetype == 'Fastboot': #Settings for Fastboot
+				modify(build.Dscpath,'PERFORMANCE_ENABLE','FALSE','TRUE')
+				modify(build.Dscpath,'INTEL_FPDT_ENABLE','TRUE','FALSE')
+			elif self.imagetype == 'Source Level Debug': #Settings for Source Level Debug
+				modify(build.Dscpath,'SOURCE_DEBUG_ENABLE','FALSE','TRUE')
+			shutil.copy(build.Dscpath,Dsc_special)
+		else:
+			if not (os.path.exists(Image) and os.path.exists(Log)):
+				os.makedirs(Image)
+				os.makedirs(Log)
+		try:
+			pass
+			buildimage=subprocess.check_call('%s > "%s.log"'%(self.command,self.logformat),shell=True)
+		except Exception,e:
+			logger.error('Build Failed:'+str(e))
+		copy(image_build_path,Image,'%s.*bin'%key_msg) #move Image file
+		try:
+			shutil.copy('%s.log'%self.logformat,Log) #move log file
+		except Exception,e:
+			logger.error('Move log file %s.log failed\n\r'%self.logformat+str(e))
+		if 'Release' in self.command and self.imagetype =='normal':
+			##If Build Release Image, copy the FirmwareUpdate.efi to Image path
+			copy(Firmwareupdate_path,Image,'FirmwareUpdate.efi','FirmwareUpdate%s.efi'%self.arch)
+		logger.info('-'*15+'Build finished'+'-'*15)
+
+class result:
+	root =os.getcwd()
+	def __init__(self,Imagefolder):
+		self.folder=Imagefolder
+		self.dict={	'Benson Glacier':'BEN',	'BENSONV':'BEN',	'BEN1':'BEN', 
+					'Minnow3':'MIN3',	'MINNOW3':'MIN3',	'MNW3':'MIN3', 
+					'Minnow3 Module':'MINT',	'M3MODUL':'MINT', 'M3MO':'MINT',
+					'Leaf Hill':'LH',	'LEAFHIL':'LH',	'LEAF':'LH',
+					"FAB A":"A",	"FAB B":"B",	"FAB D":"D",
+					"IA32":"I32",	"X64":"X64",
+					"F":"R_F",		"S":"D_S",
+					"R":"R_N",		"D":"D_N"}
+	
+	#check Image file size 
+	def check_size(self):
+		size_dict={}
+		for path,dir,file in os.walk(self.folder,topdown=True,onerror=None, followlinks=False):
+			if file != []:
+				for z in file:
+					full_path = os.path.join(path,z)
+					if os.path.getsize(full_path) == int(Image_size[:-1])*1024*1024:
+						file_name= full_path.split(misc()['symbol'])[-1]
+						if sys():
+							name_list = file_name.split('.')
+							plat = self.dict[name_list[0][0:-1]]
+							FAB = name_list[0][-1]
+							arch = name_list[1]
+							type = name_list[3][0]
+						else:
+							name_list = file_name.split('_')
+							plat = self.dict[name_list[0][0:-1]]
+							FAB = name_list[0][-1]
+							arch = name_list[1]
+							type = name_list[2]
+						folder_name = full_path.split(misc()['symbol'])[-2]
+						if folder_name != 'Image':
+							size_dict[plat+'_'+FAB+'_'+arch+type+'_'+folder_name[0]] = "Pass"
+						else:
+							size_dict[plat+'_'+FAB+'_'+arch+type+'_N'] = "Pass"
+		#logger.debug("size check rsult"+str(size_dict))
+		return size_dict
+
+	#check build log
+	def check_log(self):
+		log_dict={}
+		for path,dir,file in os.walk(self.folder,topdown=True,onerror=None, followlinks=False):
+			if file != []:
+				for z in file:
+					file = os.path.join(path,z)
+					result = open(file,'r')
+					Content = result.readlines()
+					result.close()
+					for result in Content:
+						if misc()['key_msg_in_log'] in result:
+							folder_name = file.split(misc()['symbol'])[-2]
+							file_name = file.split(misc()['symbol'])[-1]
+							name_list = file_name.split('_')
+							board=self.dict[name_list[0]]
+							FAB = name_list[1]
+							arch = name_list[2][0]+name_list[2][-2:]
+							type = name_list[3][0]
+							if folder_name != 'Log':
+								log_dict[board+'_'+FAB+'_'+arch+type+'_'+folder_name[0]] = 'Pass'
+							else:
+								log_dict[board+'_'+FAB+'_'+arch+type+'_N'] = 'Pass'
+		#logger.debug("log info check result"+str(log_dict))
+		return log_dict
+	
+	#analyze the build type from readxls(), and convert to the format which html recognise para
+	def analyze(self,data,value):
+		dict={}
+		for i in data:
+			i = i.split('_')
+			for list in i:
+				if i[0] in self.dict.keys():
+					plat = self.dict[i[0]]
+					if list in self.dict.keys():
+						board= self.dict[i[1]]
+						arch  = self.dict[i[2]]
+						type = self.dict[i[3]]
+			dict[plat+'_'+board+'_'+arch+type] = value
+		return dict
+	
+	#set N/A for not select, and all Green color for pass, Red for fail
+	def resultdict(self):
+		size=self.check_size()
+		log=self.check_log()
+		xlsdata=excel().readxls()
+		alldata=self.analyze(xlsdata[0],"N/A")
+		select=self.analyze(xlsdata[1],' ')
+		for key in select.keys():
+			if key in size.keys() and key in log.keys():
+				if size[key] == 'Pass' and log[key] == 'Pass':
+					alldata[key]="<font color ='Green'><b>Pass</b></font>"
+			else:
+				alldata[key]="<font color='Red'><b>Fail</b></font>"
+		return alldata
+
+	#use the html_model the create result page
+	#create xxx_result.html for build result
+	def html(self):
+		os.chdir(result.root)
+		dict1 = self.resultdict()
+		re_header = re.compile('(<html>.*</style>)', re.S)
+		re_table = re.compile('(<h4>.*?</table>)', re.S)
+		re_footer = re.compile('(</body>.*?</html>)', re.S)
+		text=open(html_model,'r').read()
+		header=re_header.search(text).group(1)
+		footer=re_footer.search(text).group(1)
+		if sys():
+			table=re_table.findall(text)[0]
+		else:
+			table=re_table.findall(text)[1]
+		htmltext=header+table+footer
+		html=Template(htmltext).substitute(**dict1)
+		return html,dict1
+		
+	def write_result(self):
+		html,dict1=self.html()
+		resulthtml=os.path.join(ver_path,'%s_result.html'%misc()['tool'])
+		fo = open(resulthtml,'wb')
+		fo.write(html)
+		fo.close()
+	
+	def email(self,sender,receiver,Cc):
+		msg = MIMEMultipart()
+		log = MIMEText(open('%s' %verlog, 'rb').read())
+		log["Content-Type"] = 'application/octet-stream'
+		log["Content-Disposition"] = 'attachment; filename="version.log"'
+		msg.attach(log)
+		if sys():
+			msg['Subject'] = 'Minnow3 Image Build Result -- VS2015 Tool Chain'
+		else:
+			msg['Subject'] = 'Minnow3 Image Build Result -- GCC5 Tool Chain'
+		remote_path = os.path.join(network_path,ver_path.split(misc()['symbol'])[-1])
+		msg.attach(MIMEText(self.html()[0]+"<br><font size='4'>Image share location:<a href="+remote_path+">"+mail_share_path+ver_path.split(misc()['symbol'])[-1]+"</a>",'html'))
+		msg['From'] = 'Tiano'
+		msg['To'] = ';'.join(receiver)
+		if  Cc != []:
+			msg['Cc'] = ';'.join(Cc)
+			receiver = receiver + Cc						   
+		try:
+			smtpObj = smtplib.SMTP('smtp.intel.com:25')
+			smtpObj.sendmail(sender, receiver, msg.as_string())
+			logger.info("Build result and log file send success")
+		except Exception, e:
+			logger.error("Send mail failed:"+str(e))
+			
+#Upload Image to remote
+def upload(local):
+	folder_name=local.split(misc()['symbol'])[-1]
 	try:
-		check_install()
-		keep_update()
+		if sys():
+			remote = os.path.join(network_path,folder_name)
+			subprocess.check_call('xcopy /E /Y %s %s\\' %(local,remote), shell=True)
+		else:
+			remote = os.path.join(network_GCC,folder_name)
+			subprocess.check_call('cp -r %s/ %s' %(local,remote), shell=True)
+		logger.info("Upload files Pass")
 	except Exception, e:
-		print e
-else:
-	print "Input ERROR"
+		logger.error("Upload file failed"+str(e))
+
+#record run log
+logging.basicConfig(level=logging.DEBUG,
+	format='%(levelname)-7s: %(asctime)s  [line:%(lineno)d] %(message)s',
+	datefmt='%Y-%m-%d %H:%M:%S',
+	filename='Runlog.log',
+	filemode='w')
+console = logging.StreamHandler()
+formatter = logging.Formatter('%(levelname)-7s: %(message)s')
+logger=logging.getLogger('')
+console.setLevel(logging.DEBUG)
+console.setFormatter(formatter)
+logger.addHandler(console)
+ 
+def mainbuild():
+	global ver_path
+	repo=repository(tmp,repository.https_edk,repository.ssh_edk)
+	xls = excel()
+	all_command=xls.command()
+	if 	repo.allstep():
+		start_time=datetime.datetime.now()
+		ver_path=repo.verpath()
+		build_result=result(ver_path)
+		zipsource=zip_source_file('edk2-platforms',ver_path)
+		logger.info('Build version:%s'%version_info)
+		svn(svn.user,svn.password,svn.link).copy()
+		zipsource.zip()
+		##create Readme file
+		modify(M_Readme,'Version','Version:','Version:'+version_info,Minnow3_Readme)
+		modify(B_Readme,'Version','Version:','Version:'+version_info,Benson_Readme)
+		modify(MT_Readme,'Version','Version:','Version:'+version_info,Minnow3Module_Readme)
+		modify(LH_Readme,'Version','Version:','Version:'+version_info,LeafHill_Readme)
+		copy(tmp,Source_path,'Readme.*') #copy Readme to source folder
+		shutil.copy(verlog,Source_path) #copy version.log to source folder
+		for command in all_command[0]:
+			os.chdir(edk_path)
+			build(command,all_command[1]).buildprocess()
+			zipsource.unzip()
+		logger.info('*'*15+"All build completed"+'*'*15)
+		build_result.write_result()
+		upload(ver_path)
+		build_result.email(sender,receiver,Cc)
+		end_time=datetime.datetime.now()
+		dtime=end_time-start_time
+		logger.info('Total time:%s'%str(dtime)[:-7])
+		time.sleep(60)
+	else:
+		logger.info("No code change, sleep 1 hour, press Ctrl+C to stop the script")
+		logger.info("Current time is:"+time.strftime('%Y/%m/%d %H:%M:%S'))
+		time.sleep(3600)
+	mainbuild()
+
+def main():
+	global Force_Build_Switch
+	usage="build.py [-s <switch>]"
+	parser = OptionParser(usage)
+	parser.add_option('-s','--switch',action='store',dest='switch',choices=['0','1'],default=0,help="Force Build switch, will force build Image while run script if set to 1")
+	(options,args)=parser.parse_args()
+	Force_Build_Switch = int(options.switch)
+	
+	logger.info("-"*20+'Minnow3 Image Auto Build'+"-"*20)
+	if sys():
+		os.system('net use x: %s'%network_path)
+	mainbuild()
+	
+if __name__ == '__main__':
+	main()

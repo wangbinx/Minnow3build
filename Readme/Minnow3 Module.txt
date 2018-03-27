@@ -1,0 +1,79 @@
+﻿================================================================================
+1.                           Source code info
+================================================================================
+Link: git@github.com:tianocore/edk2-platforms.git -b devel-MinnowBoard3-UDK2017
+Version: 
+
+================================================================================
+2.                           HOW TO BUILD (WINDOWS ENVIRONMENT)
+================================================================================
+1) Build Steps (32-bit) 
+   1) To build a 32-bit release version
+      Open a command prompt of Microsoft Visual Studio, such as "Developer 
+      Command Prompt for VS2013";
+      Type the command: "cd C:\MyWorkspace\edk2-platforms"; 
+      Type the command: "BuildBIOS.bat /VS13 /MX /A /IA32 Broxton Release" to build a release version.
+      (Please use "/VS15" flag for Visual Studio 2015 build)
+      
+   2) To build a 32-bit debug version
+      Open a command prompt of Microsoft Visual Studio, such as "Developer 
+      Command Prompt for VS2013";
+      Type the command: "cd C:\MyWorkspace\edk2-platforms"; 
+      Type the command: "BuildBIOS.bat /VS13 /MX /A /IA32 Broxton Debug" to build a debug version.
+      (Please use "VS15" flag for Visual Studio 2015 build)
+               
+   3) After the build successfully completes, the 8MB firmware binary image will 
+      be located in the following location on your local hard drive: 
+      
+      "C:\MyWorkspace\edk2-platforms\Platform\BroxtonPlatformPkg\Common\Tools\Stitch"
+
+2) Build Steps (64-bit) 
+   1) To build a 64-bit release version
+      Open a command prompt of Microsoft Visual Studio, such as "Developer 
+      Command Prompt for VS2013";
+      Type the command: "cd C:\MyWorkspace\edk2-platforms"; 
+      Type the command: "BuildBIOS.bat /VS13 /MX /A /x64 Broxton Release" to build a release version.
+      (Please use "VS15" flag for Visual Studio 2015 build)
+      
+   2) To build a 64-bit debug version
+      Open a command prompt of Microsoft Visual Studio, such as "Developer 
+      Command Prompt for VS2013";
+      Type the command: "cd C:\MyWorkspace\edk2-platforms"; 
+      Type the command: "BuildBIOS.bat /VS13 /MX /A /x64 Broxton Debug" to build a debug version.
+      (Please use "VS15" flag for Visual Studio 2015 build)
+               
+   3) After the build successfully completes, the 8MB firmware binary image will 
+      be located in the following location on your local hard drive: 
+      
+      "C:\MyWorkspace\edk2-platforms\Platform\BroxtonPlatformPkg\Common\Tools\Stitch"
+
+================================================================================
+3.                           HOW TO BUILD (LINUX ENVIRONMENT)
+================================================================================
+Linux System Configuration:
+  Ubuntu 16.04 64-bit
+  bash shell
+  gcc version 5 or above
+
+1) Setup Build Environment
+   1)Use below command to install required packages:
+      # sudo apt-get install nasm
+      # sudo apt-get install iasl
+      # sudo apt-get install build-essential
+      # sudo apt-get install uuid-dev
+	  
+   2) Unzip edk2-platforms.zip to ~/src/MyWorkspace/edk2-platforms
+
+2) Build
+   1) To build a release version BIOS image
+      Open a command prompt, type command "cd ~/src/MyWorkspace/edk2-platforms"
+      to enter your workspace directory, then type command "./BuildBIOS.sh /MX /A Release"
+
+   2) To build a debug version BIOS image
+      Open a command prompt, type command "cd ~/src/MyWorkspace/edk2-platforms"
+      to enter your workspace directory, then type command "./BuildBIOS.sh /MX /A Debug"
+  
+   3) After the build successfully completes, the 8MB firmware binary image will
+      be located in the following location on your local hard drive:
+      "~/src/MyWorkspace/edk2-platforms/Platform/BroxtonPlatformPkg/Common/Tools/Stitch/"
+       

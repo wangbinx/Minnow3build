@@ -1,0 +1,50 @@
+﻿================================================================================
+1.                           Source code info
+================================================================================
+Link: git@github.com:tianocore/edk2-platforms.git -b devel-MinnowBoard3-UDK2017
+Version: 
+
+================================================================================
+2.                           HOW TO BUILD (WINDOWS ENVIRONMENT)
+================================================================================
+1) Build Steps (32-bit) 
+   1) To build a 32-bit release version
+      Open a command prompt of Microsoft Visual Studio, such as "Developer 
+      Command Prompt for VS2013";
+      Type the command: "cd C:\MyWorkspace\edk2-platforms"; 
+      Type the command: "BuildBIOS.bat /VS13 /AG /A /IA32 Broxton Release" to build a release version.
+      (Please use "/VS15" flag for Visual Studio 2015 build, use "/B" flag for FAB B board)
+      
+   2) To build a 32-bit debug version
+      Open a command prompt of Microsoft Visual Studio, such as "Developer 
+      Command Prompt for VS2013";
+      Type the command: "cd C:\MyWorkspace\edk2-platforms"; 
+      Type the command: "BuildBIOS.bat /VS13 /AG /A /IA32 Broxton Debug" to build a debug version.
+      (Please use "VS15" flag for Visual Studio 2015 build, use "/B" flag for FAB B board)
+               
+   3) After the build successfully completes, the 8MB firmware binary image will 
+      be located in the following location on your local hard drive: 
+      
+      "C:\MyWorkspace\edk2-platforms\Platform\BroxtonPlatformPkg\Common\Tools\Stitch"
+
+2) Build Steps (64-bit) 
+   1) To build a 64-bit release version
+      Open a command prompt of Microsoft Visual Studio, such as "Developer 
+      Command Prompt for VS2013";
+      Type the command: "cd C:\MyWorkspace\edk2-platforms"; 
+      Type the command: "BuildBIOS.bat /VS13 /AG /A /x64 Broxton Release" to build a release version.
+      (Please use "VS15" flag for Visual Studio 2015 build, use "/B" flag for FAB B board)
+      
+   2) To build a 64-bit debug version
+      Open a command prompt of Microsoft Visual Studio, such as "Developer 
+      Command Prompt for VS2013";
+      Type the command: "cd C:\MyWorkspace\edk2-platforms"; 
+      Type the command: "BuildBIOS.bat /VS13 /AG /A /x64 Broxton Debug" to build a debug version.
+      (Please use "VS15" flag for Visual Studio 2015 build, use "/B" flag for FAB B board)
+               
+   3) After the build successfully completes, the 8MB firmware binary image will 
+      be located in the following location on your local hard drive: 
+      
+      "C:\MyWorkspace\edk2-platforms\Platform\BroxtonPlatformPkg\Common\Tools\Stitch"
+
+       
