@@ -6,4 +6,6 @@
 
 3. Install Git for Windows and add install path to system PATH
 
-4. Open CMD and located to this folder, and run command "Pyhton buildv2.py"
+4. Install SVN on Winddows and add install path to system PATH
+
+4. Open CMD and located to this folder, and run command "Pyhton build.py"

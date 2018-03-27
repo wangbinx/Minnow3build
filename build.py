@@ -21,11 +21,11 @@ root_path=os.getcwd()
 edk_path=os.path.join(root_path,'edk2-platforms')
 tmp=os.path.join(root_path,'tmp')
 M_Readme=os.path.join(root_path,'Readme','Minnow3.txt')
-B_Readme=os.path.join(root_path,'Readme','Benson.txt')
+AUR_Readme=os.path.join(root_path,'Readme','Aurora Glacier.txt')
 MT_Readme=os.path.join(root_path,'Readme','Minnow3 Module.txt')
 LH_Readme=os.path.join(root_path,'Readme','Leaf Hill.txt')
 Minnow3_Readme=os.path.join(tmp,'Readme_Minnow3.txt')
-Benson_Readme=os.path.join(tmp,'Readme_Benson.txt')
+AuroraGlacier_Readme=os.path.join(tmp,'Readme_Aurora Glacier.txt')
 Minnow3Module_Readme=os.path.join(tmp,'Readme_Minnow3 Module.txt')
 LeafHill_Readme=os.path.join(tmp,'Readme_Leaf Hill.txt')
 html_model=os.path.join(root_path,'Readme','result_model.html')
@@ -62,11 +62,11 @@ def misc():
 	if sys():
 		misc={
 		'key_msg_in_log':"Build_IFWI is finished",	
-		'symbol':'\\','tool':'VS2015','Minnow3':{'key_msg':'MINNOW3'},'Benson Glacier':{'key_msg':'BENSONV'},'Minnow3 Module':{'key_msg':'M3MODUL'},'Leaf Hill':{'key_msg':'LEAFHIL'}}
+		'symbol':'\\','tool':'VS2015','Minnow3':{'key_msg':'MINNOW3'},'Benson Glacier':{'key_msg':'BENSONV'},'Minnow3 Module':{'key_msg':'M3MODUL'},'Leaf Hill':{'key_msg':'LEAFHIL'},'Aurora Glacier':{'key_msg':'AURORAV'}}
 	else:
 		misc={
 		'key_msg_in_log':"FV Space Information",
-		'symbol':'/','tool':'GCC','Minnow3':{'key_msg':'MNW3'},'Benson Glacier':{'key_msg':'BEN1'},'Minnow3 Module':{'key_msg':'M3MO'},'Leaf Hill':{'key_msg':'LEAF'}}
+		'symbol':'/','tool':'GCC','Minnow3':{'key_msg':'MNW3'},'Benson Glacier':{'key_msg':'BEN1'},'Minnow3 Module':{'key_msg':'M3MO'},'Leaf Hill':{'key_msg':'LEAF'},'Aurora Glacier':{'key_msg':'AUR'}}
 	return misc
 
 #Clasee for repository
@@ -175,8 +175,8 @@ class repository:
 #class for svn update
 #change the link, username and password		
 class svn:
-	user = "sys_tianobui"
-	password = "IB5J6eaRQvE/sdE4g774LY97rRnVnA7L7i71rzatNpuPKnKQ="
+	user = ""
+	password = ""
 	link = "https://ssvn.intel.com:80/ssg/csd/tiano/tianoad/trunk/Platforms/MinnowBoard3/Binaries/devel-MinnowBoard3-UDK2017"
 	
 	def __init__(self, user, passwd, link):
@@ -325,6 +325,7 @@ class excel:
 		command_dict={
 		'Minnow3':'',				'Benson Glacier':'/BG',
 		'Minnow3 Module':'/MX',		'Leaf Hill':'/LH',
+		'Aurora Glacier':'/AG',
 		'FAB B':'/B',				'FAB A':'/A',		'FAB D':'/D',
 		'X64':'/X64',				'IA32':'/IA32',
 		'R':'Release type=normal',	'D':'Debug type=normal',
@@ -465,10 +466,11 @@ class result:
 	root =os.getcwd()
 	def __init__(self,Imagefolder):
 		self.folder=Imagefolder
-		self.dict={	'Benson Glacier':'BEN',	'BENSONV':'BEN',	'BEN1':'BEN', 
-					'Minnow3':'MIN3',	'MINNOW3':'MIN3',	'MNW3':'MIN3', 
-					'Minnow3 Module':'MINT',	'M3MODUL':'MINT', 'M3MO':'MINT',
-					'Leaf Hill':'LH',	'LEAFHIL':'LH',	'LEAF':'LH',
+		self.dict={	'Benson Glacier':'BEN', 	'BENSONV':'BEN',	'BEN1':'BEN', 
+					'Minnow3':'MIN3',			'MINNOW3':'MIN3',	'MNW3':'MIN3', 
+					'Minnow3 Module':'MINT',	'M3MODUL':'MINT',	'M3MO':'MINT',
+					'Leaf Hill':'LH',			'LEAFHIL':'LH',		'LEAF':'LH',
+					'Aurora Glacier':'AUR',		'AURORAV':'AUR',	'AUR':'AUR',
 					"FAB A":"A",	"FAB B":"B",	"FAB D":"D",
 					"IA32":"I32",	"X64":"X64",
 					"F":"R_F",		"S":"D_S",
@@ -651,7 +653,7 @@ def mainbuild():
 		zipsource.zip()
 		##create Readme file
 		modify(M_Readme,'Version','Version:','Version:'+version_info,Minnow3_Readme)
-		modify(B_Readme,'Version','Version:','Version:'+version_info,Benson_Readme)
+		modify(AUR_Readme,'Version','Version:','Version:'+version_info,AuroraGlacier_Readme)
 		modify(MT_Readme,'Version','Version:','Version:'+version_info,Minnow3Module_Readme)
 		modify(LH_Readme,'Version','Version:','Version:'+version_info,LeafHill_Readme)
 		copy(tmp,Source_path,'Readme.*') #copy Readme to source folder

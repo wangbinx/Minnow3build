@@ -35,29 +35,10 @@ th.arch{
 </tr>
 
 <tr>
-	<th rowspan='4' class='plat'>Minnow3</th><th class='FAB' rowspan='2'>FAB A</th><th class='arch'>IA32</th><td>${MIN3_A_I32D_N}</td><td>${MIN3_A_I32R_N}</td><td>${MIN3_A_I32R_F}</td><td>${MIN3_A_I32D_S}</td>
-</tr>
-<tr>
-<th class='arch'>X64</th><td>${MIN3_A_X64D_N}</td><td>${MIN3_A_X64R_N}</td><td>${MIN3_A_X64R_F}</td><td>${MIN3_A_X64D_S}</td>
-</tr>
-<tr>
-<th rowspan='2' class='FAB'>FAB B</th><th class='arch'>IA32</th><td>${MIN3_B_I32D_N}</td><td>${MIN3_B_I32R_N}</td><td>${MIN3_B_I32R_F}</td><td>${MIN3_B_I32D_S}</td>
+	<th rowspan='2' class='plat'>Minnow3</th><th rowspan='2' class='FAB'>FAB B</th><th class='arch'>IA32</th><td>${MIN3_B_I32D_N}</td><td>${MIN3_B_I32R_N}</td><td>${MIN3_B_I32R_F}</td><td>${MIN3_B_I32D_S}</td>
 </tr>
 <tr>
 <th class='arch'>X64</th><td>${MIN3_B_X64D_N}</td><td>${MIN3_B_X64R_N}</td><td>${MIN3_B_X64R_F}</td><td>${MIN3_B_X64D_S}</td>
-</tr>
-
-<tr>
-	<th rowspan='4' class='plat'>Benson Glacier</th><th class='FAB' rowspan='2'>FAB A</th><th class='arch'>IA32</th><td>${BEN_A_I32D_N}</td><td>${BEN_A_I32R_N}</td><td>${BEN_A_I32R_F}</td><td>${BEN_A_I32D_S}</td>
-</tr>
-<tr>
-<th class='arch'>X64</th><td>${BEN_A_X64D_N}</td><td>${BEN_A_X64R_N}</td><td>${BEN_A_X64R_F}</td><td>${BEN_A_X64D_S}</td>
-</tr>
-<tr>
-<th rowspan='2' class='FAB'>FAB B</th><th class='arch'>IA32</th><td>${BEN_B_I32D_N}</td><td>${BEN_B_I32R_N}</td><td>${BEN_B_I32R_F}</td><td>${BEN_B_I32D_S}</td>
-</tr>
-<tr>
-<th class='arch'>X64</th><td>${BEN_B_X64D_N}</td><td>${BEN_B_X64R_N}</td><td>${BEN_B_X64R_F}</td><td>${BEN_B_X64D_S}</td>
 </tr>
 
 <tr>
@@ -74,6 +55,12 @@ th.arch{
 <th class='arch'>X64</th><td>${LH_D_X64D_N}</td><td>${LH_D_X64R_N}</td><td>${LH_D_X64R_F}</td><td>${LH_D_X64D_S}</td>
 </tr>
 
+<tr>
+	<th rowspan='2' class='plat'>Aurora Glacier</th><th class='FAB' rowspan='2'>FAB A</th><th class='arch'>IA32</th><td>${AUR_A_I32D_N}</td><td>${AUR_A_I32R_N}</td><td>${AUR_A_I32R_F}</td><td>${AUR_A_I32D_S}</td>
+</tr>
+<tr>
+<th class='arch'>X64</th><td>${AUR_A_X64D_N}</td><td>${AUR_A_X64R_N}</td><td>${AUR_A_X64R_F}</td><td>${AUR_A_X64D_S}</td>
+</tr>
 
 </table>
 <h4>Minnow3 Image Build Result -- GCC5 Tool Chain</h4>
@@ -82,18 +69,9 @@ th.arch{
 	<th class='plat'>Platform</th><th class='FAB'>Type</th><th class='arch'>Arch</th><th>Debug</th><th>Release</th>
 </tr>
 <tr>
-	<th rowspan='2' class='plat'>Minnow3</th><th class='FAB'>FAB A</th><th class='arch'>X64</th><td>${MIN3_A_X64D_N}</td><td>${MIN3_A_X64R_N}</td>
-</tr>
-<tr>
-<th class='FAB'>FAB B</th><th class='arch'>X64</th><td>${MIN3_B_X64D_N}</td><td>${MIN3_B_X64R_N}</td>
+	<th rowspan='1' class='plat'>Minnow3</th><th class='FAB'>FAB B</th><th class='arch'>X64</th><td>${MIN3_B_X64D_N}</td><td>${MIN3_B_X64R_N}</td>
 </tr>
 
-<tr>
-	<th rowspan='2' class='plat'>Benson Glacier</th><th class='FAB'>FAB A</th><th class='arch'>X64</th><td>${BEN_A_X64D_N}</td><td>${BEN_A_X64R_N}</td>
-</tr>
-<tr>
-<th class='FAB'>FAB B</th><th class='arch'>X64</th><td>${BEN_B_X64D_N}</td><td>${BEN_B_X64R_N}</td>
-</tr>
 
 <tr>
 	<th class='plat'>Minnow3 Module</th><th class='FAB'>FAB A</th><th class='arch'>X64</th><td>${MINT_A_X64D_N}</td><td>${MINT_A_X64R_N}</td>
@@ -101,6 +79,10 @@ th.arch{
 
 <tr>
 	<th class='plat'>Leaf Hill</th><th class='FAB'>FAB D</th><th class='arch'>X64</th><td>${LH_D_X64D_N}</td><td>${LH_D_X64R_N}</td>
+</tr>
+
+<tr>
+	<th rowspan='1' class='plat'>Aurora Glacier</th><th class='FAB'>FAB A</th><th class='arch'>X64</th><td>${AUR_A_X64D_N}</td><td>${AUR_A_X64R_N}</td>
 </tr>
 
 </table>
