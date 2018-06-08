@@ -8,4 +8,4 @@
 
 4. Install SVN on Winddows and add install path to system PATH
 
-4. Open CMD and located to this folder, and run command "Pyhton build.py"
+5. Open CMD and located to this folder, and run command "Pyhton build.py"

@@ -30,7 +30,7 @@ Minnow3Module_Readme=os.path.join(tmp,'Readme_Minnow3 Module.txt')
 LeafHill_Readme=os.path.join(tmp,'Readme_Leaf Hill.txt')
 html_model=os.path.join(root_path,'Readme','result_model.html')
 image_build_path=os.path.join(edk_path,'Platform','BroxtonPlatformPkg','Common','Tools','Stitch')
-Firmwareupdate_path=os.path.join(edk_path,'Build','BroxtonPlatformPkg')
+Firmwareupdate_path=os.path.join(root_path,'Build','BroxtonPlatformPkg')
 network_path=os.path.join('\\\shwde9524','Backup_Minnow3Broxton')
 
 #mount network share path to ubuntu path
@@ -73,8 +73,12 @@ def misc():
 #Modify the link if chaged
 #Download, delete, compare update and create version folder
 class repository:
-	ssh_edk= "git@github.com:tianocore/edk2-platforms.git -b devel-MinnowBoard3-UDK2017"
-	https_edk= "https://github.com/tianocore/edk2-platforms.git -b devel-MinnowBoard3-UDK2017"
+	ssh_edk2platform= "git@github.com:tianocore/edk2-platforms.git -b devel-IntelAtomProcessorE3900"
+	https_edk2platform= "https://github.com/tianocore/edk2-platforms.git -b devel-IntelAtomProcessorE3900"
+	
+	ssh_edk2 = "git@github.com:tianocore/edk2.git -b vUDK2018"
+	https_edk2 = "https://github.com/tianocore/edk2.git -b vUDK2018"
+	
 	root =os.getcwd() #recoder the path
 	def __init__(self,ver_log_path,https,ssh=None):
 		self.ver_log_path=ver_log_path
@@ -84,16 +88,19 @@ class repository:
 		
 	def delete(self):
 		try:
-			for path,dir,file in os.walk(self.repo,topdown=True,onerror=None, followlinks=True):
+			for path,dir,file in os.walk(self.repo,topdown=True,onerror=None, followlinks=False):
 				for k in file:
 					filename=os.path.join(path,k)
-					os.chmod(filename,stat.S_IRWXU) #change file mode to delete the repository
+					if os.path.isfile(filename):
+						os.chmod(filename,stat.S_IRWXU) #change file mode to delete the repository
 			if os.path.exists(self.repo):
 				logger.info('%s repository already exist, delete the repository'%self.repo)
 				shutil.rmtree(self.repo)
 				logger.info("Delete exist repository %s success" %self.repo)
 		except Exception,e:
 			logger.error(str(e))
+			time.sleep(20)
+			self.delete()
 		
 	def download(self):
 		self.delete()
@@ -102,12 +109,14 @@ class repository:
 			DL1 = subprocess.check_call("git clone --depth=1 %s" %self.https,shell=True)
 			if DL1 == 0:
 				logger.info("Download from %s success --PASS" %self.https)
+				return True
 		except subprocess.CalledProcessError:
 			if self.ssh != None:
 				logger.warning("Download from %s failed, try %s" %(self.https,self.ssh))
 				DL2 = subprocess.check_call("git clone --depth=1 %s" %self.ssh,shell=True)
 				if DL2 ==0:
 					logger.info("Download from %s success --PASS" %self.ssh)
+					return True
 			else:
 				logger.error("Download repository %s Fail" %self.repo)
 				exit()
@@ -171,13 +180,26 @@ class repository:
 			self.compare()
 			Force_Build_Switch = 0
 			return True
-
+			
+	def edk2_openssl(self):
+		redk2 = self.download()
+		#if redk2:
+			#ropenssl = subprocess.check_call("cd edk2 && git submodule update --init --recursive",shell=True)
+			#if ropenssl == 0:
+			#	logger.info("Init submodule Openssl finish")
+			#	if not sys():
+			#		subprocess.check_call("chmod -R 777 %s"%self.repo,shell= True)
+			#	return True
+			#else:
+			#	logger.error("Init submodule Openssl failed")
+			#	exit()
+			
 #class for svn update
 #change the link, username and password		
 class svn:
-	user = ""
-	password = ""
-	link = "https://ssvn.intel.com:80/ssg/csd/tiano/tianoad/trunk/Platforms/MinnowBoard3/Binaries/devel-MinnowBoard3-UDK2017"
+	user = "sys_tianobui"
+	password = "IB5J6eaRQvE/sdE4g774LY97rRnVnA7L7i71rzatNpuPKnKQ="
+	link = "https://ssvn.intel.com:80/ssg/csd/tiano/tianoad/trunk/Platforms/MinnowBoard3/Binaries/devel-IntelAtomProcessorE3900"
 	
 	def __init__(self, user, passwd, link):
 		self.user=user
@@ -210,9 +232,9 @@ class svn:
 			logger.info('Start configure build environment')
 			try:
 				if sys():
-					subprocess.check_call('xcopy /Q /E /Y %s %s' %(self.svnfolder,edk_path), shell=True)
+					subprocess.check_call('xcopy /Q /E /Y %s %s' %(self.svnfolder,root_path), shell=True)
 				else:
-					subprocess.check_call('cp -r %s/* %s' %(self.svnfolder,edk_path), shell=True)
+					subprocess.check_call('cp -r %s/* %s' %(self.svnfolder,root_path), shell=True)
 				logger.info('Configure finish')
 			except Exception, e:
 				logger.error("Configure build environment failed:"+str(e))
@@ -222,32 +244,38 @@ class svn:
 #Will zip file to Source\
 class zip_source_file:
 	root = os.getcwd()
-	def __init__(self,zipdir,ziptarget):
+	def __init__(self,filename,zipdir,ziptarget):
 		global Source_path
 		self.zipdir=zipdir
-		self.zipfilename="%s.zip"%zipdir
+		self.zipfilename="%s.zip"%filename
 		self.ziptarget=os.path.join(ziptarget,'Source')
 		self.source= os.path.join(self.ziptarget,self.zipfilename)
 		Source_path=self.ziptarget
 				
 	def zip(self):
-		filelist = []
-		if os.path.isfile(self.zipdir):
-			filelist.append(self.zipdir)
+		if sys():
+			filelist = []
+			for dir in self.zipdir:
+				if os.path.isfile(dir):
+					filelist.append(dir)
+				else:
+					for path, dirs, files in os.walk(dir):
+						for name in files:
+							filelist.append(os.path.join(path, name))
+			try:
+				logger.info("Zipping %s to save source code..." %self.zipfilename)
+				zf = zipfile.ZipFile(self.zipfilename, "w", zipfile.zlib.DEFLATED)
+				for file in filelist:
+					zf.write(file)
+				zf.close()
+				logger.info('zip %s success'%self.zipfilename)
+			except Exception,e:
+				logger.error("Zip failed:"+str(e))
 		else:
-			for path, dirs, files in os.walk(self.zipdir):
-				for name in files:
-					filelist.append(os.path.join(path, name))
-		try:
-			logger.info("Zipping %s to save source code..." %self.zipfilename)
-			zf = zipfile.ZipFile(self.zipfilename, "w", zipfile.zlib.DEFLATED)
-			for file in filelist:
-				name = file[len(self.zipdir):]
-				zf.write(file,name)
-			zf.close()
-			logger.info('zip %s success'%self.zipfilename)
-		except Exception,e:
-			logger.error("Zip failed:"+str(e))
+			zipcommand = 'zip -ry %s '%self.zipfilename
+			for dir in self.zipdir:
+				zipcommand += dir+' '
+			os.system(zipcommand.strip())
 		if os.path.exists(self.ziptarget):
 			shutil.rmtree(self.ziptarget)
 		os.makedirs(self.ziptarget)
@@ -255,22 +283,24 @@ class zip_source_file:
 			
 	def unzip(self):
 		os.chdir(zip_source_file.root)
-		if os.path.exists(self.zipdir):
-			repository(tmp,repository.https_edk,repository.ssh_edk).delete()
+		if os.path.exists(self.zipdir[0]):
+				repository(tmp,repository.https_edk2platform,repository.ssh_edk2platform).delete()
+				repository(tmp,repository.https_edk2,repository.ssh_edk2).delete()
 		if not os.path.exists(self.source):
 			logger.error('%s file not exist'%self.source)
 		try:
 			logger.info('start unzip %s file'%self.source)
 			unzip=zipfile.ZipFile(self.source,'r')
 			for file in unzip.namelist():
-				unzip.extract(file,self.zipdir)
+				unzip.extract(file,root_path)
 			unzip.close()
 			logger.info('unzip %s success'%self.zipdir)
 			if not sys():
-				try:
-					subprocess.check_call('chmod -R 777 %s'%self.zipdir,shell=True) #Change unzip file mode for execute
-				except Exception,e:
-					logger.error('Change %s access failed'%self.zipdir+str(e))
+				for dir in self.zipdir:
+					try:
+						subprocess.check_call('chmod -R 777 %s'%dir,shell=True) #Change unzip file mode for execute
+					except Exception,e:
+						logger.error('Change %s access failed'%dir+str(e))
 		except Exception,e:
 			logger.error("Unzip failed:"+str(e))
 
@@ -471,10 +501,11 @@ class result:
 					'Minnow3 Module':'MINT',	'M3MODUL':'MINT',	'M3MO':'MINT',
 					'Leaf Hill':'LH',			'LEAFHIL':'LH',		'LEAF':'LH',
 					'Aurora Glacier':'AUR',		'AURORAV':'AUR',	'AUR':'AUR',
-					"FAB A":"A",	"FAB B":"B",	"FAB D":"D",
-					"IA32":"I32",	"X64":"X64",
-					"F":"R_F",		"S":"D_S",
-					"R":"R_N",		"D":"D_N"}
+					"FAB A":"A",				"FAB B":"B",		"FAB D":"D",
+					"IA32":"I32",				"X64":"X64",
+					"F":"R_F",					"S":"D_S",
+					"R":"R_N",					"D":"D_N"
+					}
 	
 	#check Image file size 
 	def check_size(self):
@@ -640,14 +671,16 @@ logger.addHandler(console)
  
 def mainbuild():
 	global ver_path
-	repo=repository(tmp,repository.https_edk,repository.ssh_edk)
+	del_dir=['Build','Conf']
+	edk_repo=repository(tmp,repository.https_edk2platform,repository.ssh_edk2platform)
+	edk2_repo=repository(tmp,repository.https_edk2,repository.ssh_edk2)
 	xls = excel()
 	all_command=xls.command()
-	if 	repo.allstep():
+	if 	edk_repo.allstep() and edk2_repo.download():
 		start_time=datetime.datetime.now()
-		ver_path=repo.verpath()
+		ver_path=edk_repo.verpath()
 		build_result=result(ver_path)
-		zipsource=zip_source_file('edk2-platforms',ver_path)
+		zipsource=zip_source_file(version_info[0:8],['edk2-platforms','edk2'],ver_path)
 		logger.info('Build version:%s'%version_info)
 		svn(svn.user,svn.password,svn.link).copy()
 		zipsource.zip()
@@ -659,6 +692,9 @@ def mainbuild():
 		copy(tmp,Source_path,'Readme.*') #copy Readme to source folder
 		shutil.copy(verlog,Source_path) #copy version.log to source folder
 		for command in all_command[0]:
+			for dir in del_dir:
+				if os.path.exists(dir):
+					shutil.rmtree(dir)
 			os.chdir(edk_path)
 			build(command,all_command[1]).buildprocess()
 			zipsource.unzip()
