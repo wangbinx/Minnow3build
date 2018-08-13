@@ -198,7 +198,7 @@ class repository:
 #change the link, username and password		
 class svn:
 	user = "sys_tianobui"
-	password = "IB5J6eaRQvE/sdE4g774LY97rRnVnA7L7i71rzatNpuPKnKQ="
+	password = ""
 	link = "https://ssvn.intel.com:80/ssg/csd/tiano/tianoad/trunk/Platforms/MinnowBoard3/Binaries/devel-IntelAtomProcessorE3900"
 	
 	def __init__(self, user, passwd, link):
