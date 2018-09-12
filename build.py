@@ -62,11 +62,11 @@ def misc():
 	if sys():
 		misc={
 		'key_msg_in_log':"Build_IFWI is finished",	
-		'symbol':'\\','tool':'VS2015','Minnow3':{'key_msg':'MINNOW3'},'Benson Glacier':{'key_msg':'BENSONV'},'Minnow3 Module':{'key_msg':'M3MODUL'},'Leaf Hill':{'key_msg':'LEAFHIL'},'Aurora Glacier':{'key_msg':'AURORAV'}}
+		'symbol':'\\','tool':'VS2015','Minnow3':{'key_msg':'MINNOW3'},'Benson Glacier':{'key_msg':'BENSONV'},'Minnow3 Module':{'key_msg':'M3MODUL'},'Leaf Hill':{'key_msg':'LEAFHIL'},'Aurora Glacier':{'key_msg':'AURORAV'},'UP2':{'key_msg':'UPBOARD'}}
 	else:
 		misc={
 		'key_msg_in_log':"FV Space Information",
-		'symbol':'/','tool':'GCC','Minnow3':{'key_msg':'MNW3'},'Benson Glacier':{'key_msg':'BEN1'},'Minnow3 Module':{'key_msg':'M3MO'},'Leaf Hill':{'key_msg':'LEAF'},'Aurora Glacier':{'key_msg':'AUR'}}
+		'symbol':'/','tool':'GCC','Minnow3':{'key_msg':'MNW3'},'Benson Glacier':{'key_msg':'BEN1'},'Minnow3 Module':{'key_msg':'M3MO'},'Leaf Hill':{'key_msg':'LEAF'},'Aurora Glacier':{'key_msg':'AUR'},'UP2':{'key_msg':'UPBO'}}
 	return misc
 
 #Clasee for repository
@@ -198,7 +198,7 @@ class repository:
 #change the link, username and password		
 class svn:
 	user = "sys_tianobui"
-	password = ""
+	password = "IB5J6eaRQvE/sdE4g774LY97rRnVnA7L7i71rzatNpuPKnKQ="
 	link = "https://ssvn.intel.com:80/ssg/csd/tiano/tianoad/trunk/Platforms/MinnowBoard3/Binaries/devel-IntelAtomProcessorE3900"
 	
 	def __init__(self, user, passwd, link):
@@ -355,8 +355,8 @@ class excel:
 		command_dict={
 		'Minnow3':'',				'Benson Glacier':'/BG',
 		'Minnow3 Module':'/MX',		'Leaf Hill':'/LH',
-		'Aurora Glacier':'/AG',
-		'FAB B':'/B',				'FAB A':'/A',		'FAB D':'/D',
+		'Aurora Glacier':'/AG',		'UP2':'/UP',
+		'FAB B':'/B',				'FAB A':'/A',		'FAB D':'/D',		'FAB C':'/C',
 		'X64':'/X64',				'IA32':'/IA32',
 		'R':'Release type=normal',	'D':'Debug type=normal',
 		'F':'Release type=Fastboot','S':'Debug type=Source Level Debug'}
@@ -501,7 +501,8 @@ class result:
 					'Minnow3 Module':'MINT',	'M3MODUL':'MINT',	'M3MO':'MINT',
 					'Leaf Hill':'LH',			'LEAFHIL':'LH',		'LEAF':'LH',
 					'Aurora Glacier':'AUR',		'AURORAV':'AUR',	'AUR':'AUR',
-					"FAB A":"A",				"FAB B":"B",		"FAB D":"D",
+					'UP2':'UP2',				'UPBOARD':'UP2',	'UPBO':'UP2',
+					"FAB A":"A",				"FAB B":"B",		"FAB D":"D",	"FAB C":"C",
 					"IA32":"I32",				"X64":"X64",
 					"F":"R_F",					"S":"D_S",
 					"R":"R_N",					"D":"D_N"
