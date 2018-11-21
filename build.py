@@ -46,7 +46,7 @@ Image_size = '8M'
 #Email for result
 sender = 'binx.a.wang@intel.com'
 receiver = ['weix.b.sun@intel.com','binx.a.wang@intel.com','linglix.ji@intel.com','yanyanx.zhang@intel.com','yunhuax.feng@intel.com']
-Cc=['yonghong.zhu@intel.com','david.wei@intel.com','shifeix.a.lu@intel.com','mang.guo@intel.com']
+Cc=['yonghong.zhu@intel.com','david.wei@intel.com','zailiang.sun@intel.com','yi.qian@intel.com']
 
 def sys():
 	if platform.system() == "Windows":
