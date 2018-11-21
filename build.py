@@ -31,13 +31,13 @@ LeafHill_Readme=os.path.join(tmp,'Readme_Leaf Hill.txt')
 html_model=os.path.join(root_path,'Readme','result_model.html')
 image_build_path=os.path.join(edk_path,'Platform','BroxtonPlatformPkg','Common','Tools','Stitch')
 Firmwareupdate_path=os.path.join(root_path,'Build','BroxtonPlatformPkg')
-network_path=os.path.join('\\\shwde9524','Backup_Minnow3Broxton')
+network_path=os.path.join('\\\shwde9524','Backup_IntelAtomE3900')
 
 #mount network share path to ubuntu path
-network_GCC=os.path.join('/media','share')
+network_GCC=os.path.join('/media','Backup_IntelAtomE3900')
 
 #Image share location
-mail_share_path = "\\\shwde9524\Backup_Minnow3Broxton\\"
+mail_share_path = "\\\shwde9524\Backup_IntelAtomE3900\\"
 
 
 # Set Image file size to determine the build result
@@ -46,7 +46,7 @@ Image_size = '8M'
 #Email for result
 sender = 'binx.a.wang@intel.com'
 receiver = ['weix.b.sun@intel.com','binx.a.wang@intel.com','linglix.ji@intel.com','yanyanx.zhang@intel.com','yunhuax.feng@intel.com']
-Cc=['yonghong.zhu@intel.com','david.wei@intel.com','shifeix.a.lu@intel.com','mang.guo@intel.com','keerock.lee@intel.com']
+Cc=['yonghong.zhu@intel.com','david.wei@intel.com','shifeix.a.lu@intel.com','mang.guo@intel.com']
 
 def sys():
 	if platform.system() == "Windows":
@@ -62,11 +62,11 @@ def misc():
 	if sys():
 		misc={
 		'key_msg_in_log':"Build_IFWI is finished",	
-		'symbol':'\\','tool':'VS2015','Minnow3':{'key_msg':'MINNOW3'},'Benson Glacier':{'key_msg':'BENSONV'},'Minnow3 Module':{'key_msg':'M3MODUL'},'Leaf Hill':{'key_msg':'LEAFHIL'},'Aurora Glacier':{'key_msg':'AURORAV'},'UP2':{'key_msg':'UPBOARD'}}
+		'tool':'VS2015','Minnow3':{'key_msg':'MINNOW3'},'Benson Glacier':{'key_msg':'BENSONV'},'Minnow3 Module':{'key_msg':'M3MODUL'},'Leaf Hill':{'key_msg':'LEAFHIL'},'Aurora Glacier':{'key_msg':'AURORAV'},'UP2':{'key_msg':'UPBOARD'}}
 	else:
 		misc={
 		'key_msg_in_log':"FV Space Information",
-		'symbol':'/','tool':'GCC','Minnow3':{'key_msg':'MNW3'},'Benson Glacier':{'key_msg':'BEN1'},'Minnow3 Module':{'key_msg':'M3MO'},'Leaf Hill':{'key_msg':'LEAF'},'Aurora Glacier':{'key_msg':'AUR'},'UP2':{'key_msg':'UPBO'}}
+		'tool':'GCC','Minnow3':{'key_msg':'MNW3'},'Benson Glacier':{'key_msg':'BEN1'},'Minnow3 Module':{'key_msg':'M3MO'},'Leaf Hill':{'key_msg':'LEAF'},'Aurora Glacier':{'key_msg':'AUR'},'UP2':{'key_msg':'UPBO'}}
 	return misc
 
 #Clasee for repository
@@ -93,6 +93,7 @@ class repository:
 					filename=os.path.join(path,k)
 					if os.path.isfile(filename):
 						os.chmod(filename,stat.S_IRWXU) #change file mode to delete the repository
+			time.sleep(5)
 			if os.path.exists(self.repo):
 				logger.info('%s repository already exist, delete the repository'%self.repo)
 				shutil.rmtree(self.repo)
@@ -342,9 +343,9 @@ class excel:
 					arch = sh.cell_value(i,2)
 					type = sh.cell_value(0,a)
 					if (value == 'y' or value == 'Y'):
-						selecttd='%s_%s_%s_%s'%(plat,FAB,arch,type[0])
+						selecttd='%s_%s_%s_%s'%(plat,FAB,arch,type)
 						select.append(selecttd)
-					alltd='%s_%s_%s_%s'%(plat,FAB,arch,type[0])
+					alltd='%s_%s_%s_%s'%(plat,FAB,arch,type)
 					all.append(alltd)
 		return (all,select)
 		##[u'Minnow3_FAB A_IA32_R', u'Minnow3_FAB A_IA32_D']
@@ -358,8 +359,8 @@ class excel:
 		'Aurora Glacier':'/AG',		'UP2':'/UP',
 		'FAB B':'/B',				'FAB A':'/A',		'FAB D':'/D',		'FAB C':'/C',
 		'X64':'/X64',				'IA32':'/IA32',
-		'R':'Release type=normal',	'D':'Debug type=normal',
-		'F':'Release type=Fastboot','S':'Debug type=Source Level Debug'}
+		'Release':'Release type=normal',	'Debug':'Debug type=normal',
+		'Fastboot(R)':'Release type=Fastboot(R)','Source Level Debug':'Debug type=Source Level Debug','Disable flash region access(R)':'Release type=Disable flash region access(R)'}
 		xls=self.readxls()
 		buildcommand=[]
 		logger.info('*'*20+'Below command will Run'+'*'*20)
@@ -458,25 +459,29 @@ class build:
 		key_msg=misc()[self.board]['key_msg']
 		Image=os.path.join(ver_path,self.board,'FAB %s'%self.FAB,misc()['tool'],'Image')
 		Log= os.path.join(ver_path,self.board,'FAB %s'%self.FAB,misc()['tool'],'Log')
+		if not (os.path.exists(Image) and os.path.exists(Log)):
+				os.makedirs(Image)
+				os.makedirs(Log)
 		if self.imagetype !='normal':
 			Image=os.path.join(Image,self.imagetype)
 			Log= os.path.join(Log,self.imagetype)
 			if not (os.path.exists(Image) and os.path.exists(Log)):
 				os.makedirs(Image)
 				os.makedirs(Log)
-			Dsc_origin= os.path.join(Image,'Defines_ori.dsc')
-			Dsc_special = os.path.join(Image,'Defines_'+self.imagetype+'.dsc')
-			shutil.copy(build.Dscpath,Dsc_origin)
-			if self.imagetype == 'Fastboot': #Settings for Fastboot
-				modify(build.Dscpath,'PERFORMANCE_ENABLE','FALSE','TRUE')
-				modify(build.Dscpath,'INTEL_FPDT_ENABLE','TRUE','FALSE')
-			elif self.imagetype == 'Source Level Debug': #Settings for Source Level Debug
-				modify(build.Dscpath,'SOURCE_DEBUG_ENABLE','FALSE','TRUE')
-			shutil.copy(build.Dscpath,Dsc_special)
-		else:
-			if not (os.path.exists(Image) and os.path.exists(Log)):
-				os.makedirs(Image)
-				os.makedirs(Log)
+			if self.imagetype in ['Fastboot(R)','Source Level Debug']:
+				Dsc_origin= os.path.join(Image,'Defines_ori.dsc')
+				Dsc_special = os.path.join(Image,'Defines_'+self.imagetype+'.dsc')
+				shutil.copy(build.Dscpath,Dsc_origin)
+				if self.imagetype == 'Fastboot(R)': #Settings for Fastboot
+					modify(build.Dscpath,'PERFORMANCE_ENABLE','FALSE','TRUE')
+					modify(build.Dscpath,'INTEL_FPDT_ENABLE','TRUE','FALSE')
+				elif self.imagetype == 'Source Level Debug': #Settings for Source Level Debug
+					modify(build.Dscpath,'SOURCE_DEBUG_ENABLE','FALSE','TRUE')
+				shutil.copy(build.Dscpath,Dsc_special)
+			elif self.imagetype in ['Disable flash region access(R)']:
+				tmpcommand = self.command.split(" ")
+				tmpcommand.insert(-4, "/L")
+				self.command = " ".join(tmpcommand)
 		try:
 			pass
 			buildimage=subprocess.check_call('%s > "%s.log"'%(self.command,self.logformat),shell=True)
@@ -504,8 +509,8 @@ class result:
 					'UP2':'UP2',				'UPBOARD':'UP2',	'UPBO':'UP2',
 					"FAB A":"A",				"FAB B":"B",		"FAB D":"D",	"FAB C":"C",
 					"IA32":"I32",				"X64":"X64",
-					"F":"R_F",					"S":"D_S",
-					"R":"R_N",					"D":"D_N"
+					"Fastboot(R)":"R_Fastboot(R)",		"Source Level Debug":"D_Source Level Debug",	"Disable flash region access(R)":'R_Disable flash region access(R)',
+					"Release":"R_N",					"Debug":"D_N"
 					}
 	
 	#check Image file size 
@@ -516,7 +521,7 @@ class result:
 				for z in file:
 					full_path = os.path.join(path,z)
 					if os.path.getsize(full_path) == int(Image_size[:-1])*1024*1024:
-						file_name= full_path.split(misc()['symbol'])[-1]
+						file_name= full_path.split(os.path.sep)[-1]
 						if sys():
 							name_list = file_name.split('.')
 							plat = self.dict[name_list[0][0:-1]]
@@ -529,9 +534,9 @@ class result:
 							FAB = name_list[0][-1]
 							arch = name_list[1]
 							type = name_list[2]
-						folder_name = full_path.split(misc()['symbol'])[-2]
+						folder_name = full_path.split(os.path.sep)[-2]
 						if folder_name != 'Image':
-							size_dict[plat+'_'+FAB+'_'+arch+type+'_'+folder_name[0]] = "Pass"
+							size_dict[plat+'_'+FAB+'_'+arch+type+'_'+folder_name] = "Pass"
 						else:
 							size_dict[plat+'_'+FAB+'_'+arch+type+'_N'] = "Pass"
 		#logger.debug("size check rsult"+str(size_dict))
@@ -549,15 +554,15 @@ class result:
 					result.close()
 					for result in Content:
 						if misc()['key_msg_in_log'] in result:
-							folder_name = file.split(misc()['symbol'])[-2]
-							file_name = file.split(misc()['symbol'])[-1]
+							folder_name = file.split(os.path.sep)[-2]
+							file_name = file.split(os.path.sep)[-1]
 							name_list = file_name.split('_')
 							board=self.dict[name_list[0]]
 							FAB = name_list[1]
 							arch = name_list[2][0]+name_list[2][-2:]
 							type = name_list[3][0]
 							if folder_name != 'Log':
-								log_dict[board+'_'+FAB+'_'+arch+type+'_'+folder_name[0]] = 'Pass'
+								log_dict[board+'_'+FAB+'_'+arch+type+'_'+folder_name] = 'Pass'
 							else:
 								log_dict[board+'_'+FAB+'_'+arch+type+'_N'] = 'Pass'
 		#logger.debug("log info check result"+str(log_dict))
@@ -597,7 +602,7 @@ class result:
 	#create xxx_result.html for build result
 	def html(self):
 		os.chdir(result.root)
-		dict1 = self.resultdict()
+		dict1 = self._replacespaceinkey(self.resultdict())
 		re_header = re.compile('(<html>.*</style>)', re.S)
 		re_table = re.compile('(<h4>.*?</table>)', re.S)
 		re_footer = re.compile('(</body>.*?</html>)', re.S)
@@ -611,7 +616,17 @@ class result:
 		htmltext=header+table+footer
 		html=Template(htmltext).substitute(**dict1)
 		return html,dict1
-		
+
+	def _replacespaceinkey(self, dict):
+		dict2 = {}
+		flag = False
+		for key in list(dict.keys()):
+			if " " in key or "(" in key:
+				dict2[key.replace(" ", "_").split("(")[0]] = dict[key]
+			else:
+				dict2[key] = dict[key]
+		return dict2
+
 	def write_result(self):
 		html,dict1=self.html()
 		resulthtml=os.path.join(ver_path,'%s_result.html'%misc()['tool'])
@@ -626,11 +641,11 @@ class result:
 		log["Content-Disposition"] = 'attachment; filename="version.log"'
 		msg.attach(log)
 		if sys():
-			msg['Subject'] = 'Minnow3 Image Build Result -- VS2015 Tool Chain'
+			msg['Subject'] = 'IntelAtomE3900 Image Build Result -- VS2015 Tool Chain'
 		else:
-			msg['Subject'] = 'Minnow3 Image Build Result -- GCC5 Tool Chain'
-		remote_path = os.path.join(network_path,ver_path.split(misc()['symbol'])[-1])
-		msg.attach(MIMEText(self.html()[0]+"<br><font size='4'>Image share location:<a href="+remote_path+">"+mail_share_path+ver_path.split(misc()['symbol'])[-1]+"</a>",'html'))
+			msg['Subject'] = 'IntelAtomE3900 Image Build Result -- GCC5 Tool Chain'
+		remote_path = os.path.join(network_path,ver_path.split(os.path.sep)[-1])
+		msg.attach(MIMEText(self.html()[0]+"<br><font size='4'>Image share location:<a href="+remote_path+">"+mail_share_path+ver_path.split(os.path.sep)[-1]+"</a>",'html'))
 		msg['From'] = 'Tiano'
 		msg['To'] = ';'.join(receiver)
 		if  Cc != []:
@@ -645,7 +660,7 @@ class result:
 			
 #Upload Image to remote
 def upload(local):
-	folder_name=local.split(misc()['symbol'])[-1]
+	folder_name=local.split(os.path.sep)[-1]
 	try:
 		if sys():
 			remote = os.path.join(network_path,folder_name)
@@ -695,10 +710,17 @@ def mainbuild():
 		for command in all_command[0]:
 			for dir in del_dir:
 				if os.path.exists(dir):
-					shutil.rmtree(dir)
+					try:
+						shutil.rmtree(dir)
+					except Exception, e:
+						logger.warning("Remove dir failed, try again. "+str(e))
+						shutil.rmtree(dir)
+			time.sleep(5)
 			os.chdir(edk_path)
 			build(command,all_command[1]).buildprocess()
+			time.sleep(5)
 			zipsource.unzip()
+			time.sleep(5)
 		logger.info('*'*15+"All build completed"+'*'*15)
 		build_result.write_result()
 		upload(ver_path)
@@ -720,7 +742,6 @@ def main():
 	parser.add_option('-s','--switch',action='store',dest='switch',choices=['0','1'],default=0,help="Force Build switch, will force build Image while run script if set to 1")
 	(options,args)=parser.parse_args()
 	Force_Build_Switch = int(options.switch)
-	
 	logger.info("-"*20+'Minnow3 Image Auto Build'+"-"*20)
 	if sys():
 		os.system('net use x: %s'%network_path)

@@ -28,51 +28,31 @@ th.arch{
 	text-align:center;
 	width:65}
 </style>
-<h4>Minnow3 Image Build Result -- VS2015 Tool Chain</h4>
+<h4>IntelAtomE3900 Image Build Result -- VS2015 Tool Chain</h4>
 <table>
 <tr class='line1'>
-	<th class='plat'>Platform</th><th class='FAB'>Type</th><th class='arch'>Arch</th><th>Debug</th><th>Release</th><th>Fastboot(R)</th><th>Source Level Debug</th>
+	<th class='plat'>Platform</th><th class='FAB'>Type</th><th class='arch'>Arch</th><th>Debug</th><th>Release</th><th>Fastboot(R)</th><th>Source_Level_Debug</th><th>Disable_flash_region_access(R)</th>
 </tr>
 
 <tr>
-	<th rowspan='4' class='plat'>Minnow3 Module</th><th class='FAB' rowspan='2'>FAB A</th><th class='arch'>IA32</th><td>${MINT_A_I32D_N}</td><td>${MINT_A_I32R_N}</td><td>${MINT_A_I32R_F}</td><td>${MINT_A_I32D_S}</td>
+	<th rowspan='2' class='plat'>Leaf Hill</th><th class='FAB' rowspan='2'>FAB D</th><th class='arch'>IA32</th><td>${LH_D_I32D_N}</td><td>${LH_D_I32R_N}</td><td>${LH_D_I32R_Fastboot}</td><td>${LH_D_I32D_Source_Level_Debug}</td><td>${LH_D_I32R_Disable_flash_region_access}</td>
 </tr>
 <tr>
-<th class='arch'>X64</th><td>${MINT_A_X64D_N}</td><td>${MINT_A_X64R_N}</td><td>${MINT_A_X64R_F}</td><td>${MINT_A_X64D_S}</td>
-</tr>
-
-<th class='FAB' rowspan='2'>FAB C</th><th class='arch'>IA32</th><td>${MINT_C_I32D_N}</td><td>${MINT_C_I32R_N}</td><td>${MINT_C_I32R_F}</td><td>${MINT_C_I32D_S}</td>
-</tr>
-<tr>
-<th class='arch'>X64</th><td>${MINT_C_X64D_N}</td><td>${MINT_C_X64R_N}</td><td>${MINT_C_X64R_F}</td><td>${MINT_C_X64D_S}</td>
+<th class='arch'>X64</th><td>${LH_D_X64D_N}</td><td>${LH_D_X64R_N}</td><td>${LH_D_X64R_Fastboot}</td><td>${LH_D_X64D_Source_Level_Debug}</td><td>${LH_D_X64R_Disable_flash_region_access}</td>
 </tr>
 
 <tr>
-	<th rowspan='2' class='plat'>Leaf Hill</th><th class='FAB' rowspan='2'>FAB D</th><th class='arch'>IA32</th><td>${LH_D_I32D_N}</td><td>${LH_D_I32R_N}</td><td>${LH_D_I32R_F}</td><td>${LH_D_I32D_S}</td>
+	<th rowspan='2' class='plat'>UP2</th><th class='FAB' rowspan='2'>FAB A</th><th class='arch'>IA32</th><td>${UP2_A_I32D_N}</td><td>${UP2_A_I32R_N}</td><td>${UP2_A_I32R_Fastboot}</td><td>${UP2_A_I32D_Source_Level_Debug}</td><td>${UP2_A_I32R_Disable_flash_region_access}</td>
 </tr>
 <tr>
-<th class='arch'>X64</th><td>${LH_D_X64D_N}</td><td>${LH_D_X64R_N}</td><td>${LH_D_X64R_F}</td><td>${LH_D_X64D_S}</td>
-</tr>
-
-<tr>
-	<th rowspan='2' class='plat'>UP2</th><th class='FAB' rowspan='2'>FAB A</th><th class='arch'>IA32</th><td>${UP2_A_I32D_N}</td><td>${UP2_A_I32R_N}</td><td>${UP2_A_I32R_F}</td><td>${UP2_A_I32D_S}</td>
-</tr>
-<tr>
-<th class='arch'>X64</th><td>${UP2_A_X64D_N}</td><td>${UP2_A_X64R_N}</td><td>${UP2_A_X64R_F}</td><td>${UP2_A_X64D_S}</td>
+<th class='arch'>X64</th><td>${UP2_A_X64D_N}</td><td>${UP2_A_X64R_N}</td><td>${UP2_A_X64R_Fastboot}</td><td>${UP2_A_X64D_Source_Level_Debug}</td><td>${UP2_A_X64R_Disable_flash_region_access}</td>
 </tr>
 
 </table>
-<h4>Minnow3 Image Build Result -- GCC5 Tool Chain</h4>
+<h4>IntelAtomE3900 Image Build Result -- GCC5 Tool Chain</h4>
 <table>
 <tr class='line1'>
 	<th class='plat'>Platform</th><th class='FAB'>Type</th><th class='arch'>Arch</th><th>Debug</th><th>Release</th>
-</tr>
-
-<tr>
-	<th rowspan='2' class='plat'>Minnow3 Module</th><th class='FAB'>FAB A</th><th class='arch'>X64</th><td>${MINT_A_X64D_N}</td><td>${MINT_A_X64R_N}</td>
-</tr>
-<tr>
-	<th class='FAB'>FAB C</th><th class='arch'>X64</th><td>${MINT_C_X64D_N}</td><td>${MINT_C_X64R_N}</td>
 </tr>
 
 <tr>
