@@ -198,9 +198,10 @@ class repository:
 #class for svn update
 #change the link, username and password		
 class svn:
-	user = "sys_tianobui"
-	password = "IB5J6eaRQvE/sdE4g774LY97rRnVnA7L7i71rzatNpuPKnKQ="
-	link = "https://ssvn.intel.com:80/ssg/csd/tiano/tianoad/trunk/Platforms/MinnowBoard3/Binaries/devel-IntelAtomProcessorE3900"
+	#user info and link address
+	user = ""
+	password = ""
+	link = ""
 	
 	def __init__(self, user, passwd, link):
 		self.user=user
